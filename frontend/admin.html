@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QC Dashboard Admin</title>
+  <link rel="icon" href="https://oss-api.berijalan.id/web-berijalan/img/logo%20tab.webp" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <div class="admin-topbar">
+      <div class="admin-brand">
+        <img src="https://oss-api.berijalan.id/web-berijalan/img/logo%20tab.webp" alt="Logo" />
+        <div>
+          <div>QC Dashboard Admin</div>
+          <div class="admin-muted" style="color:rgba(255,255,255,0.8)">Manajemen file Excel & user TL</div>
+        </div>
+      </div>
+      <div class="admin-actions">
+        <button class="btn-admin-secondary" id="go-user-page-btn">Buka Halaman TL</button>
+        <button class="btn-admin-danger" id="admin-logout-btn">Log out</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <div class="notice-bar">
+        Catatan penting: saya menambahkan kolom <strong>tl_name</strong> pada tabel users. Tanpa kolom ini, login TL tidak bisa dikunci ke nama Team Leader pada file Excel secara aman.
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-stat">
+          <div class="label">Total User</div>
+          <div class="value" id="stat-total-users">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="label">Total TL</div>
+          <div class="value" id="stat-total-tl">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="label">File Admin</div>
+          <div class="value" id="stat-total-admin-files">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="label">Upload Manual TL</div>
+          <div class="value" id="stat-total-manual-files">-</div>
+        </div>
+      </div>
+
+      <div class="admin-panels">
+        <div class="admin-card">
+          <h3>Manajemen User TL</h3>
+          <p>Tambah, edit, dan hapus user TL. Username tidak perlu sama dengan nama TL di Excel, karena mapping disimpan di tl_name.</p>
+
+          <form class="admin-form" id="user-form">
+            <input class="form-input" id="user-id" type="hidden" />
+            <div class="form-row">
+              <div>
+                <label class="form-label" for="user-username">Username</label>
+                <input class="form-input" id="user-username" type="text" required />
+              </div>
+              <div>
+                <label class="form-label" for="user-password">Password</label>
+                <input class="form-input" id="user-password" type="text" placeholder="Kosongkan saat edit jika tidak diubah" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label class="form-label" for="user-role">Role</label>
+                <select class="form-input" id="user-role">
+                  <option value="tl">TL</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" for="user-tl-name">Nama TL di Excel (tl_name)</label>
+                <input class="form-input" id="user-tl-name" type="text" placeholder="contoh: Elbina Debora" />
+              </div>
+            </div>
+            <div class="admin-actions">
+              <button class="btn-admin-primary" type="submit">Simpan User</button>
+              <button class="btn-admin-secondary" type="button" id="reset-user-form-btn">Reset</button>
+            </div>
+          </form>
+
+          <hr class="divider" />
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>TL Name</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Manajemen File Excel</h3>
+          <p>File dengan source <strong>admin</strong> akan muncul pada dropdown TL. File dengan source <strong>tl_manual</strong> adalah upload manual dari user TL.</p>
+
+          <form class="admin-form" id="file-form">
+            <div class="form-row">
+              <div>
+                <label class="form-label" for="file-display-name">Nama File di Sistem</label>
+                <input class="form-input" id="file-display-name" type="text" placeholder="contoh: QC_November" required />
+              </div>
+              <div>
+                <label class="form-label" for="file-upload">Upload Excel</label>
+                <input class="form-input" id="file-upload" type="file" accept=".csv,.xlsx,.xls" required />
+              </div>
+            </div>
+            <div class="admin-actions">
+              <button class="btn-admin-primary" type="submit">Upload File Admin</button>
+            </div>
+          </form>
+
+          <hr class="divider" />
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Source</th>
+                  <th>Uploader</th>
+                  <th>Tanggal</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="files-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QC Audio Dashboard</title>
+  <link rel="icon" href="https://oss-api.berijalan.id/web-berijalan/img/logo%20tab.webp" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader-overlay" class="hidden">
+  <div class="loader-inner">
+    <div class="loader-logo-wrap">
+      <img src="https://oss-api.berijalan.id/web-berijalan/img/logo%20tab.webp" alt="Logo" class="loader-logo-img" />
+    </div>
+    <div class="loader-progress-wrap">
+      <div class="loader-progress-bar">
+        <div class="loader-progress-fill" id="loader-progress-fill"></div>
+      </div>
+      <div class="loader-progress-pct" id="loader-progress-pct">0%</div>
+    </div>
+    <p class="loader-text" id="loader-text">Memuat data...</p>
+  </div>
+</div>
+
+<!-- LOGIN PAGE -->
+<div id="login-page">
+  <!-- Animated background boxes -->
+  <div class="login-bg-boxes" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="https://oss-api.berijalan.id/web-berijalan/img/logo%20tab.webp" alt="Logo" />
+      <span>QC Dashboard</span>
+    </div>
+    <h2 class="login-title">Masuk ke Dashboard</h2>
+    <p class="login-sub">Gunakan akun TL atau Admin. Admin akan diarahkan ke halaman manajemen, sedangkan TL masuk ke dashboard.</p>
+    <div class="form-group">
+      <label class="form-label" for="login-user">Username</label>
+      <input class="form-input" id="login-user" type="text" placeholder="contoh: Elbina" autocomplete="username" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="login-pass">Password</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="Password" autocomplete="current-password" />
+    </div>
+    <button class="btn-login" id="login-btn">Masuk</button>
+    <p class="login-error" id="login-error"></p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="hidden">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="https://oss-api.berijalan.id/web-berijalan/img/logo%20tab.webp" alt="Logo" />
+      <div>
+        <div class="brand">QC Audio</div>
+        <div class="brand-sub">Dashboard</div>
+      </div>
+      <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close sidebar">&#x2715;</button>
+    </div>
+
+    <div class="sidebar-section-title">Filter &amp; Data</div>
+
+    <div class="sidebar-field source-card">
+      <label class="sidebar-label">Opsi 1 — Pilih Berkas dari Admin</label>
+      <select class="sidebar-select" id="admin-file-select">
+        <option value="">-- Pilih Berkas / Tanggal --</option>
+      </select>
+      <p class="sidebar-helper">Dropdown ini memuat file yang diupload admin ke database.</p>
+    </div>
+
+    <div class="sidebar-field source-card">
+      <label class="sidebar-label">Opsi 2 — Upload Manual</label>
+      <div class="sidebar-upload-area" id="upload-area">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 12V4m0 0L8 8m4-4l4 4" />
+        </svg>
+        <p>Klik untuk upload CSV / XLSX</p>
+      </div>
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" />
+      <div class="file-indicator hidden" id="file-indicator">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style="color:rgba(255,255,255,0.7)">
+          <path d="M14 4.5V14a2 2 0 01-2 2H4a2 2 0 01-2-2V2a2 2 0 012-2h5.5L14 4.5z"/>
+        </svg>
+        <span id="file-name">-</span>
+      </div>
+      <p class="sidebar-helper" id="manual-file-caption">Upload manual akan dipakai sebagai file aktif Anda sendiri.</p>
+    </div>
+
+    <div class="sidebar-section-title" style="margin-top:8px">Kategori Penilaian</div>
+    <div class="sidebar-mode-toggle">
+      <button class="sidebar-mode-btn" data-mode="Agent" id="mode-agent-btn">Agent</button>
+      <button class="sidebar-mode-btn active" data-mode="TL" id="mode-tl-btn">TL</button>
+    </div>
+
+    <div class="sidebar-field" style="margin-top:12px">
+      <label class="sidebar-label">Team Leader (TL) - otomatis dari login</label>
+      <select class="sidebar-select" id="tl-select">
+        <option value="">-- Pilih TL --</option>
+      </select>
+    </div>
+
+    <div class="sidebar-field" id="agent-field">
+      <label class="sidebar-label">Mitra (Agent)</label>
+      <select class="sidebar-select" id="agent-select">
+        <option value="">-- Pilih Agent --</option>
+      </select>
+    </div>
+
+    <!-- Spacer pushes logout + footer to bottom -->
+    <div class="sidebar-spacer"></div>
+
+    <!-- LOGOUT at bottom -->
+    <div class="sidebar-bottom">
+      <div class="sidebar-divider-line"></div>
+      <button class="sidebar-logout-btn" id="logout-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Log out
+      </button>
+      <div class="sidebar-footer">
+        <img src="https://oss-api.berijalan.id/web-berijalan/img/logo-berijalan.webp" alt="Berijalan" />
+        <p>QC Audio Dashboard</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile overlay backdrop -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle sidebar">
+        <span></span><span></span><span></span>
+      </button>
+      <span class="topbar-title">QC Audio Dashboard</span>
+      <div class="topbar-badges" id="topbar-badges"></div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content" id="main-content">
+      <!-- Empty state (shown before first data load) -->
+      <div id="empty-state" class="empty-state hidden"></div>
+
+      <!-- Dashboard (hidden until data loaded) -->
+      <div id="dashboard" class="hidden">
+        <!-- HERO -->
+        <div class="hero">
+          <div class="hero-title">Monitoring Performa QC Audio</div>
+          <div class="hero-sub" id="hero-sub">Harian jika data hanya 1 tanggal, bulanan jika data lebih dari 1 tanggal. Semua grafik dibuat agar mudah dibaca pemula: ada ringkasan aspek, pola per jam, pola per minggu, serta detail agent saat dibutuhkan.</div>
+        </div>
+
+        <!-- KPI -->
+        <div class="kpi-grid" id="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Overall</div>
+            <div class="kpi-value" id="kpi-overall">-</div>
+            <div class="kpi-sub" id="kpi-overall-sub">-</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Jumlah Rekaman</div>
+            <div class="kpi-value" id="kpi-rekaman">-</div>
+            <div class="kpi-sub">rekaman aktif</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Aspek Dihitung</div>
+            <div class="kpi-value" id="kpi-aspek">-</div>
+            <div class="kpi-sub">aspek QC</div>
+          </div>
+        </div>
+
+        <!-- INTEREST STRIP -->
+        <div class="interest-strip" id="interest-strip"></div>
+
+        <!-- MONTH SELECTOR (bulanan only) -->
+        <div id="month-bar-wrap" class="hidden">
+          <div class="month-bar" id="month-bar"></div>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs-bar" id="tabs-bar">
+          <button class="tab-btn active" data-tab="overview">Overview</button>
+          <button class="tab-btn" data-tab="weekly" id="tab-weekly-btn">Weekly Trend</button>
+          <button class="tab-btn" data-tab="hourly">Hourly Trend</button>
+          <button class="tab-btn" data-tab="data">Data &amp; Detail</button>
+        </div>
+
+        <!-- TAB: OVERVIEW -->
+        <div class="tab-pane active" id="tab-overview">
+          <div class="section-title" id="overview-title">Ringkasan Performa per Aspek</div>
+          <div class="section-sub">Ditampilkan sebagai jumlah terpenuhi / total rekaman. Diurutkan dari aspek terlemah.</div>
+          <div class="table-wrap" id="result-table-wrap">
+            <table id="result-table">
+              <thead><tr id="result-thead-row"></tr></thead>
+              <tbody id="result-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- TL: agent comparison -->
+          <div id="agent-comparison-section" class="hidden">
+            <hr class="divider" />
+            <div class="section-title">Perbandingan Performa Agent</div>
+            <div class="section-sub">Menampilkan agent terendah berdasarkan overall, beserta 4 aspek yang paling jarang disebutkan.</div>
+            <div class="two-col">
+              <div>
+                <div class="section-title" style="font-size:12px;margin-bottom:10px;color:#475569">Mitra Terburuk</div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Nama Mitra</th><th>Overall (%)</th><th>Aspek Jarang Disebut</th></tr></thead>
+                    <tbody id="worst-agent-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <div class="section-title" style="font-size:12px;margin-bottom:10px;color:#475569">Mitra Terbaik</div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Nama Mitra</th><th>Overall (%)</th><th>Aspek Konsisten</th></tr></thead>
+                    <tbody id="best-agent-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: WEEKLY TREND -->
+        <div class="tab-pane" id="tab-weekly">
+          <div class="section-title">Trend Overall per Minggu</div>
+          <div class="section-sub">Grafik ini membantu melihat apakah performa minggu ini berada di atas atau di bawah pola normal.</div>
+          <div class="chart-card">
+            <div class="chart-title">Overall (%) per Minggu</div>
+            <canvas id="chart-weekly-overall" height="100"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Volume Minat / WM per Minggu</div>
+            <canvas id="chart-weekly-wm" height="70"></canvas>
+          </div>
+
+          <hr class="divider" />
+          <div class="section-title">Jumlah Minat per Hari (Bulan Terpilih)</div>
+          <div class="section-sub">Line = rate minat (%). Bar = jumlah minat. Bagian ini memudahkan melihat hari yang paling produktif.</div>
+          <div class="chart-card">
+            <canvas id="chart-daily-rate" height="90"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Jumlah Minat per Hari</div>
+            <canvas id="chart-daily-bar" height="70"></canvas>
+          </div>
+
+          <div id="period-split-section" class="hidden">
+            <hr class="divider" />
+            <div class="section-title">Perbandingan Jumlah Minat per Hari antar 2 Periode Bulan</div>
+            <div class="section-sub">Periode 1 ditampilkan dengan garis biru dan Periode 2 dengan garis merah agar pola awal dan akhir bulan lebih mudah dibandingkan langsung.</div>
+            <div class="chart-card">
+              <div class="chart-title" id="period-comparison-title">Perbandingan Periode 1 vs Periode 2</div>
+              <canvas id="chart-period-comparison" height="90"></canvas>
+            </div>
+          </div>
+
+          <div id="routine-section" class="hidden">
+            <hr class="divider" />
+            <div class="section-title">Jumlah Minat per Hari (Agent Rutin)</div>
+            <div class="section-sub">Agent rutin = agent yang kosong maksimal 2 hari selama bulan aktif.</div>
+            <div class="chart-card">
+              <canvas id="chart-rutin" height="90"></canvas>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Agent</th><th>Hari Hadir</th><th>Hari Kosong</th><th>Jumlah Minat</th><th>Jumlah Tidak Minat</th><th>Jumlah Rekaman</th></tr></thead>
+                <tbody id="rutin-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="nonroutine-section" class="hidden">
+            <hr class="divider" />
+            <div class="section-title">Jumlah Minat per Hari (Agent Tidak Rutin)</div>
+            <div class="section-sub">Agent tidak rutin = agent yang kosong lebih dari 2 hari selama bulan aktif.</div>
+            <div class="chart-card">
+              <canvas id="chart-tidak-rutin" height="90"></canvas>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Agent</th><th>Hari Hadir</th><th>Hari Kosong</th><th>Jumlah Minat</th><th>Jumlah Tidak Minat</th><th>Jumlah Rekaman</th></tr></thead>
+                <tbody id="tidak-rutin-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: HOURLY TREND -->
+        <div class="tab-pane" id="tab-hourly">
+          <div class="section-title">Trend per Jam</div>
+          <div class="section-sub">Semua jam aktif ditampilkan agar tidak ada slot penting yang tersembunyi, termasuk 12:00-13:00 dan 16:00-18:00 bila ada data.</div>
+
+          <div class="chart-card">
+            <div class="chart-title">Performa Overall per Jam</div>
+            <div class="legend-grid" id="hourly-overall-legend"></div>
+            <canvas id="chart-hourly-overall" height="100"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Jumlah Rekaman per Jam</div>
+            <canvas id="chart-hourly-volume" height="70"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Jam Rawan Minat</div>
+            <div class="mini-note">Bar = jumlah minat. Line = rate minat (%).</div>
+            <canvas id="chart-hourly-interest" height="90"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Jam Rawan Tidak Minat</div>
+            <div class="mini-note">Bar = jumlah tidak minat. Line = rate tidak minat (%).</div>
+            <canvas id="chart-hourly-not-interest" height="90"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Jam Diangkat Berdasarkan Jenis Call</div>
+            <div class="legend-grid" id="call-mix-legend"></div>
+            <canvas id="chart-call-mix" height="90"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Durasi Rata-rata per Jam</div>
+            <canvas id="chart-hourly-duration" height="70"></canvas>
+          </div>
+        </div>
+
+        <!-- TAB: DATA & DETAIL -->
+        <div class="tab-pane" id="tab-data">
+          <!-- Agent interest summary (TL mode) -->
+          <div id="agent-interest-section" class="hidden">
+            <div class="section-title">Ringkasan Agent (Minat vs Tidak Minat)</div>
+            <div class="section-sub">Mengikuti filter call type + periode yang sedang dipilih. Klik nama agent untuk detail rekaman.</div>
+            <div class="table-wrap" style="margin-bottom:20px">
+              <table>
+                <thead><tr><th>Agent</th><th>Jumlah Minat</th><th>Jumlah Tidak Minat</th><th>Jumlah Rekaman</th></tr></thead>
+                <tbody id="agent-interest-tbody"></tbody>
+              </table>
+            </div>
+            <hr class="divider" />
+          </div>
+
+          <!-- Priority T1 -->
+          <div class="section-title">Data Call Minat: Agent Jarang Menyebut 3 Aspek Prioritas</div>
+          <div class="section-sub">Call bertipe M1, M2, atau M3 yang masih belum/jarang menyebut: Simulasi, Segmentation Offer Range, dan Benefit.</div>
+          <div class="table-wrap" id="priority-t1-wrap" style="margin-bottom:20px">
+            <table><thead><tr id="pt1-head"></tr></thead><tbody id="pt1-body"></tbody></table>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Priority T2 -->
+          <div class="section-title">Data Call Tidak Minat: Agent Sudah Simulasi (Potensi Follow Up)</div>
+          <div class="section-sub">Call bertipe Tidak Minat yang sudah melakukan Simulasi.</div>
+          <div class="table-wrap" id="priority-t2-wrap" style="margin-bottom:20px">
+            <table><thead><tr id="pt2-head"></tr></thead><tbody id="pt2-body"></tbody></table>
+          </div>
+
+        </div>
+
+      </div><!-- /dashboard -->
+    </div><!-- /content -->
+  </main>
+</div><!-- /app -->
+
+<!-- MODAL: Agent Detail -->
+<div class="modal-overlay" id="agent-modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Detail Agent</span>
+      <button class="modal-close" id="modal-close">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
