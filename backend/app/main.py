@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
 from app.routers import admin, auth, dashboard
 from app.seed import seed_default_users
 from app.services.file_service import ensure_storage_dirs
@@ -17,7 +17,7 @@ def _get_cors_origins() -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-app = FastAPI(title=settings.app_name, version="3.0.0")
+app = FastAPI(title=settings.app_name, version="4.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,7 +36,7 @@ app.include_router(admin.router)
 def on_startup():
     Base.metadata.create_all(bind=engine)
     ensure_storage_dirs()
-    from app.database import SessionLocal
+
     db = SessionLocal()
     try:
         seed_default_users(db)
@@ -51,6 +51,7 @@ async def validation_exception_handler(request, exc: RequestValidationError):
         loc = " -> ".join(str(x) for x in err.get("loc", []))
         msg = err.get("msg", "Input tidak valid")
         simplified.append(f"{loc}: {msg}" if loc else msg)
+
     return JSONResponse(
         status_code=422,
         content={

@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.models import FileSourceType, UserRole
+from app.models import FileIngestStatus, FileSourceType, UserRole
 
 
 class LoginRequest(BaseModel):
@@ -60,12 +60,21 @@ class FileOut(BaseModel):
     id: int
     file_name: str
     original_name: Optional[str] = None
-    file_path: str
+    file_path: Optional[str] = None
     upload_date: datetime
     uploaded_by: int
     uploaded_by_username: Optional[str] = None
     source_type: FileSourceType
     is_active: bool
+
+    ingest_status: FileIngestStatus
+    ingest_error: Optional[str] = None
+    processed_at: Optional[datetime] = None
+    row_count: Optional[int] = None
+    column_count: Optional[int] = None
+    tl_count: Optional[int] = None
+    agent_count: Optional[int] = None
+    available_months: Optional[list[str]] = None
 
     class Config:
         from_attributes = True

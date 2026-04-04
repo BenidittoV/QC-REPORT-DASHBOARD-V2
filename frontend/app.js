@@ -351,7 +351,7 @@ async function doLogin() {
     hide($('login-page'));
     show($('app'));
 
-    await loadAvailableFiles({ autoSelectFirst: true, manageLoader: false });
+    await loadAvailableFiles({ autoSelectFirst: false, manageLoader: false });
 
     if (!state.activeFileId) {
       setEmptyStateMessage(`
@@ -461,10 +461,12 @@ $('admin-file-select')?.addEventListener('change', async (e) => {
 
 async function loadAvailableFiles({ autoSelectFirst = false, manageLoader = true } = {}) {
   if (manageLoader) showLoader('Memuat daftar berkas admin...', { stage: 'generic' });
+
   try {
     const res = await fetch(`${API}/files/available`, {
       headers: authHeaders(),
     });
+
     if (!res.ok) {
       throw new Error(await readErrorResponse(res));
     }
@@ -477,16 +479,17 @@ async function loadAvailableFiles({ autoSelectFirst = false, manageLoader = true
       state.activeFileId = state.availableFiles[0].id;
       state.activeFileName = state.availableFiles[0].file_name;
       if ($('admin-file-select')) $('admin-file-select').value = String(state.activeFileId);
-      await loadMeta({ manageLoader: false });
+      // sengaja TIDAK loadMeta di sini
+      // supaya saat halaman pertama dibuka backend tidak langsung berat
     }
   } catch (e) {
     setEmptyStateMessage(`
-      <div class="empty-state-card">
-        <h3>Berkas admin belum tersedia</h3>
-        <p>${escHtml(e.message || 'Belum ada file admin yang bisa dipilih.')}</p>
-      </div>
-    `);
+### Gagal memuat daftar file
+
+${e.message || 'Tidak bisa mengambil daftar file admin.'}
+`);
   }
+
   if (manageLoader) hideLoader();
 }
 
@@ -2508,7 +2511,7 @@ window.addEventListener('load', async () => {
   hide($('login-page'));
   show($('app'));
   try {
-    await loadAvailableFiles({ autoSelectFirst: true, manageLoader: false });
+    await loadAvailableFiles({ autoSelectFirst: false, manageLoader: false });
     if (!state.activeFileId) {
       setEmptyStateMessage(`
         <div class="empty-state-card">
