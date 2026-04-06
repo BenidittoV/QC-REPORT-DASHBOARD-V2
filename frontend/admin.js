@@ -72,6 +72,11 @@ function rolePill(role) {
   return `<span class="role-pill ${cssClass}">${escapeHtml(role)}</span>`;
 }
 
+function fmtNum(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num.toLocaleString('id-ID') : '-';
+}
+
 function formatDate(value) {
   if (!value) return '-';
   return new Date(value).toLocaleString('id-ID');
@@ -81,8 +86,8 @@ async function loadDashboard() {
   const stats = await api('/admin/dashboard');
   $('stat-total-users').textContent = stats.total_users;
   $('stat-total-tl').textContent = stats.total_tl;
-  $('stat-total-admin-files').textContent = stats.total_admin_files;
-  $('stat-total-manual-files').textContent = stats.total_manual_files;
+  $('stat-total-admin-files').textContent = stats.total_files;
+  $('stat-total-rows').textContent = stats.total_rows;
 }
 
 async function loadUsers() {
@@ -111,11 +116,10 @@ async function loadFiles() {
     <tr>
       <td>
         <strong>${escapeHtml(file.file_name)}</strong><br />
-        <span class="admin-muted">${escapeHtml(file.original_name || '-')}</span>
+        <span class="admin-muted">${fmtNum(file.row_count)} baris • ${fmtNum(file.tl_count)} TL • ${fmtNum(file.agent_count)} agent</span>
       </td>
-      <td>${rolePill(file.source_type)}</td>
       <td>${escapeHtml(file.uploaded_by_username || '-')}</td>
-      <td>${formatDate(file.upload_date)}</td>
+      <td>${escapeHtml(file.start_date || '-')} s/d ${escapeHtml(file.end_date || '-')}</td>
       <td>
         <div class="admin-actions">
           <button class="btn-admin-secondary" data-action="rename-file" data-id="${file.id}">Rename</button>

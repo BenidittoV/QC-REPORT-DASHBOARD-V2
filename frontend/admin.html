@@ -16,7 +16,7 @@
         <img src="https://oss-api.berijalan.id/web-berijalan/img/logo%20tab.webp" alt="Logo" />
         <div>
           <div>QC Dashboard Admin</div>
-          <div class="admin-muted" style="color:rgba(255,255,255,0.8)">Manajemen file Excel & user TL</div>
+          <div class="admin-muted" style="color:rgba(255,255,255,0.8)">Manajemen ingest Excel & user TL</div>
         </div>
       </div>
       <div class="admin-actions">
@@ -27,7 +27,7 @@
 
     <div class="admin-content">
       <div class="notice-bar">
-        Catatan penting: saya menambahkan kolom <strong>tl_name</strong> pada tabel users. Tanpa kolom ini, login TL tidak bisa dikunci ke nama Team Leader pada file Excel secara aman.
+        Catatan penting: Excel sekarang hanya dipakai saat admin upload. Setelah itu data dipecah ke tabel database agar user tidak lagi membebani server dengan parsing file mentah.
       </div>
 
       <div class="admin-grid">
@@ -40,12 +40,12 @@
           <div class="value" id="stat-total-tl">-</div>
         </div>
         <div class="admin-stat">
-          <div class="label">File Admin</div>
+          <div class="label">Dataset</div>
           <div class="value" id="stat-total-admin-files">-</div>
         </div>
         <div class="admin-stat">
-          <div class="label">Upload Manual TL</div>
-          <div class="value" id="stat-total-manual-files">-</div>
+          <div class="label">Total Baris</div>
+          <div class="value" id="stat-total-rows">-</div>
         </div>
       </div>
 
@@ -104,7 +104,7 @@
 
         <div class="admin-card">
           <h3>Manajemen File Excel</h3>
-          <p>File dengan source <strong>admin</strong> akan muncul pada dropdown TL. File dengan source <strong>tl_manual</strong> adalah upload manual dari user TL.</p>
+          <p>Excel yang diupload admin akan diproses satu kali lalu disimpan ke tabel database. User TL hanya memilih dataset yang sudah jadi.</p>
 
           <form class="admin-form" id="file-form">
             <div class="form-row">
@@ -118,7 +118,7 @@
               </div>
             </div>
             <div class="admin-actions">
-              <button class="btn-admin-primary" type="submit">Upload File Admin</button>
+              <button class="btn-admin-primary" type="submit">Upload Dataset</button>
             </div>
           </form>
 
@@ -129,9 +129,9 @@
               <thead>
                 <tr>
                   <th>Nama</th>
-                  <th>Source</th>
+                  <th>Ringkasan</th>
                   <th>Uploader</th>
-                  <th>Tanggal</th>
+                  <th>Periode</th>
                   <th>Aksi</th>
                 </tr>
               </thead>

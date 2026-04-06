@@ -1,9 +1,27 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.models import FileIngestStatus, FileSourceType, UserRole
+from app.models import UserRole
+
+
+class FileListItem(BaseModel):
+    id: int
+    file_name: str
+    original_name: Optional[str] = None
+    upload_date: datetime
+    uploaded_by: int
+    uploaded_by_username: Optional[str] = None
+    is_active: bool
+    row_count: int = 0
+    tl_count: int = 0
+    agent_count: int = 0
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+    class Config:
+        from_attributes = True
 
 
 class LoginRequest(BaseModel):
@@ -17,6 +35,7 @@ class LoginResponse(BaseModel):
     role: UserRole
     tl_name: Optional[str] = None
     session_token: str
+    available_files: list[FileListItem] = Field(default_factory=list)
 
 
 class ProcessRequest(BaseModel):
@@ -41,40 +60,5 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
 
 
-class UserOut(BaseModel):
-    id: int
-    username: str
-    role: UserRole
-    tl_name: Optional[str] = None
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
 class FileUpdate(BaseModel):
     file_name: str
-
-
-class FileOut(BaseModel):
-    id: int
-    file_name: str
-    original_name: Optional[str] = None
-    file_path: Optional[str] = None
-    upload_date: datetime
-    uploaded_by: int
-    uploaded_by_username: Optional[str] = None
-    source_type: FileSourceType
-    is_active: bool
-
-    ingest_status: FileIngestStatus
-    ingest_error: Optional[str] = None
-    processed_at: Optional[datetime] = None
-    row_count: Optional[int] = None
-    column_count: Optional[int] = None
-    tl_count: Optional[int] = None
-    agent_count: Optional[int] = None
-    available_months: Optional[list[str]] = None
-
-    class Config:
-        from_attributes = True

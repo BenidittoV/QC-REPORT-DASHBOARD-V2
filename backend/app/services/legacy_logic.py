@@ -335,6 +335,8 @@ def normalize_identity_values(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def parse_metadata_datecall(series: pd.Series) -> pd.Series:
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return pd.to_datetime(series, errors="coerce")
     s = series.fillna("").astype(str).str.strip()
     bulan = {
         "januari": "01", "februari": "02", "maret": "03", "april": "04",
@@ -345,7 +347,10 @@ def parse_metadata_datecall(series: pd.Series) -> pd.Series:
     for nama, mm in bulan.items():
         s_low = s_low.str.replace(fr"\b{nama}\b", mm, regex=True)
     s_low = s_low.str.replace(r"^(\d{1,2})\s+(\d{2})\s+(\d{4})\s+", r"\1-\2-\3 ", regex=True)
-    return pd.to_datetime(s_low, format="%d-%m-%Y %H:%M:%S", errors="coerce")
+    parsed = pd.to_datetime(s_low, format="%d-%m-%Y %H:%M:%S", errors="coerce")
+    if parsed.notna().any():
+        return parsed
+    return pd.to_datetime(series, errors="coerce")
 
 
 def ensure_date_and_dt(df: pd.DataFrame) -> pd.DataFrame:

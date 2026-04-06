@@ -1,3 +1,3 @@
 window.APP_CONFIG = {
-  API_BASE_URL: 'http://localhost:8000'
+  API_BASE_URL: 'http://hilarious-thomasina-qc-report-dashboard-v2-d42d456a.koyeb.app/'
 };

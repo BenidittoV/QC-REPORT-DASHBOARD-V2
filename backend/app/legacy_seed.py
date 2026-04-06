@@ -8,7 +8,7 @@ LEGACY_TL_USERS = [
     {"username": "Era", "password": "Rembulan173Hening", "tl_name": "Eranio Dwi"},
     {"username": "Ogie", "password": "Awan865Senyap", "tl_name": "Ogie Prayoga"},
     {"username": "Sisil", "password": "Bintang521Cahaya", "tl_name": "Wiartika Sisil Mukaromah"},
-    {"username": "Fandri", "password": "Lampion409Terang", "tl_name": "Fandri Ghozali"},
+    {"username": "Fandri", "password": "Lampiob409Terang", "tl_name": "Fandri Ghozali"},
 ]
 
 DEFAULT_ADMIN = {

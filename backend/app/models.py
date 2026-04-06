@@ -1,19 +1,7 @@
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import (
-    JSON,
-    Boolean,
-    Date,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -24,18 +12,6 @@ class UserRole(str, enum.Enum):
     tl = "tl"
 
 
-class FileSourceType(str, enum.Enum):
-    admin = "admin"
-    tl_manual = "tl_manual"
-
-
-class FileIngestStatus(str, enum.Enum):
-    pending = "pending"
-    processing = "processing"
-    ready = "ready"
-    failed = "failed"
-
-
 class User(Base):
     __tablename__ = "users"
 
@@ -43,79 +19,72 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), nullable=False, index=True)
-    tl_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    tl_name: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    uploaded_files: Mapped[list["ExcelFile"]] = relationship(
-        "ExcelFile",
+    uploaded_files: Mapped[list["DataFile"]] = relationship(
+        "DataFile",
         back_populates="uploader",
         cascade="all, delete-orphan",
     )
 
 
-class ExcelFile(Base):
+class DataFile(Base):
     __tablename__ = "files"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     file_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     original_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-
-    # Tetap disimpan untuk local/dev atau audit ringan.
-    # Di production Koyeb, jangan dijadikan source of truth.
-    file_path: Mapped[str | None] = mapped_column(Text, nullable=True)
-
     upload_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    source_type: Mapped[FileSourceType] = mapped_column(Enum(FileSourceType), nullable=False, index=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
-    ingest_status: Mapped[FileIngestStatus] = mapped_column(
-        Enum(FileIngestStatus),
-        default=FileIngestStatus.pending,
-        nullable=False,
-        index=True,
-    )
-    ingest_error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-
-    row_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    column_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    tl_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    agent_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
-    meta_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    available_months_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    row_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    tl_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    agent_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     uploader: Mapped[User] = relationship("User", back_populates="uploaded_files")
-
-    records: Mapped[list["CallRecord"]] = relationship(
-        "CallRecord",
+    records: Mapped[list["DataRecord"]] = relationship(
+        "DataRecord",
         back_populates="file",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
 
-class CallRecord(Base):
-    __tablename__ = "call_records"
-    __table_args__ = (
-        UniqueConstraint("file_id", "row_number", name="uq_call_records_file_row_number"),
-        Index("ix_call_records_file_tl_agent_month", "file_id", "tl_name", "agent_name", "month_key"),
-    )
+class DataRecord(Base):
+    __tablename__ = "file_records"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     file_id: Mapped[int] = mapped_column(ForeignKey("files.id", ondelete="CASCADE"), nullable=False, index=True)
-    row_number: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    tl_name: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
-    agent_name: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
-    call_result: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    call_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
-    month_key: Mapped[str | None] = mapped_column(String(7), nullable=True, index=True)
+    call_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    call_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    duration_seconds: Mapped[float | None] = mapped_column(nullable=True)
 
-    # Menyimpan row hasil ingest agar analytics lama tetap bisa dipakai
-    # tanpa parse ulang Excel.
-    payload_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    team_leader: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    agent_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    call_result: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    lov3_result: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sentiment_category: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sentiment_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    file: Mapped[ExcelFile] = relationship("ExcelFile", back_populates="records")
+    raw_data_greetings_open: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_say_acc: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_agent_name: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_cust_name: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_unit_cust: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_kontrak_cust: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_choice_cust: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_greetings_close: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_say_benefit: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_do_simulasi: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_say_include_angsuran: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_say_segmentation_offer_range: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    raw_data_say_ref_contract_stat: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+
+    file: Mapped[DataFile] = relationship("DataFile", back_populates="records")

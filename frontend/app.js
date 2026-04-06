@@ -37,6 +37,7 @@ const STORAGE_KEYS = {
   username: 'qc_username',
   role: 'qc_role',
   tlName: 'qc_tl_name',
+  availableFiles: 'qc_available_files',
 };
 
 function saveAuth(auth) {
@@ -44,6 +45,7 @@ function saveAuth(auth) {
   localStorage.setItem(STORAGE_KEYS.username, auth.username || '');
   localStorage.setItem(STORAGE_KEYS.role, auth.role || '');
   localStorage.setItem(STORAGE_KEYS.tlName, auth.tl_name || '');
+  localStorage.setItem(STORAGE_KEYS.availableFiles, JSON.stringify(auth.available_files || []));
 }
 
 function clearAuth() {
@@ -51,11 +53,18 @@ function clearAuth() {
 }
 
 function getStoredAuth() {
+  let availableFiles = [];
+  try {
+    availableFiles = JSON.parse(localStorage.getItem(STORAGE_KEYS.availableFiles) || '[]');
+  } catch (_) {
+    availableFiles = [];
+  }
   return {
     sessionToken: localStorage.getItem(STORAGE_KEYS.token) || '',
     username: localStorage.getItem(STORAGE_KEYS.username) || '',
     role: localStorage.getItem(STORAGE_KEYS.role) || '',
     tlName: localStorage.getItem(STORAGE_KEYS.tlName) || '',
+    availableFiles,
   };
 }
 
@@ -346,21 +355,19 @@ async function doLogin() {
     state.mode = 'TL';
     state.activeFileId = null;
     state.activeFileName = '';
+    state.availableFiles = Array.isArray(loginData?.available_files) ? loginData.available_files : [];
     resetDashboardView();
+    populateAvailableFiles();
 
     hide($('login-page'));
     show($('app'));
 
-    await loadAvailableFiles({ autoSelectFirst: false, manageLoader: false });
-
-    if (!state.activeFileId) {
-      setEmptyStateMessage(`
-        <div class="empty-state-card">
-          <h3>Pilih sumber data dulu</h3>
-          <p>Pilih <strong>Berkas dari Admin</strong> atau gunakan <strong>Upload Manual</strong> pada sidebar.</p>
-        </div>
-      `);
-    }
+    setEmptyStateMessage(`
+      <div class="empty-state-card">
+        <h3>Pilih data dulu</h3>
+        <p>Setelah login, dashboard belum mengambil data apa pun. Silakan pilih dataset pada dropdown di sidebar untuk mulai memuat dashboard.</p>
+      </div>
+    `);
 
     hideLoader();
   } catch (e) {
@@ -449,8 +456,8 @@ $('admin-file-select')?.addEventListener('change', async (e) => {
   if (!state.activeFileId) {
     setEmptyStateMessage(`
       <div class="empty-state-card">
-        <h3>Pilih sumber data dulu</h3>
-        <p>Pilih <strong>Berkas dari Admin</strong> atau gunakan <strong>Upload Manual</strong>.</p>
+        <h3>Pilih data dulu</h3>
+        <p>Pilih dataset admin dari dropdown terlebih dahulu.</p>
       </div>
     `);
     return;
@@ -461,12 +468,10 @@ $('admin-file-select')?.addEventListener('change', async (e) => {
 
 async function loadAvailableFiles({ autoSelectFirst = false, manageLoader = true } = {}) {
   if (manageLoader) showLoader('Memuat daftar berkas admin...', { stage: 'generic' });
-
   try {
     const res = await fetch(`${API}/files/available`, {
       headers: authHeaders(),
     });
-
     if (!res.ok) {
       throw new Error(await readErrorResponse(res));
     }
@@ -476,20 +481,16 @@ async function loadAvailableFiles({ autoSelectFirst = false, manageLoader = true
     populateAvailableFiles();
 
     if (autoSelectFirst && !state.activeFileId && state.availableFiles.length > 0) {
-      state.activeFileId = state.availableFiles[0].id;
-      state.activeFileName = state.availableFiles[0].file_name;
-      if ($('admin-file-select')) $('admin-file-select').value = String(state.activeFileId);
-      // sengaja TIDAK loadMeta di sini
-      // supaya saat halaman pertama dibuka backend tidak langsung berat
+      if ($('admin-file-select')) $('admin-file-select').value = '';
     }
   } catch (e) {
     setEmptyStateMessage(`
-### Gagal memuat daftar file
-
-${e.message || 'Tidak bisa mengambil daftar file admin.'}
-`);
+      <div class="empty-state-card">
+        <h3>Dataset admin belum tersedia</h3>
+        <p>${escHtml(e.message || 'Belum ada dataset admin yang bisa dipilih.')}</p>
+      </div>
+    `);
   }
-
   if (manageLoader) hideLoader();
 }
 
@@ -547,8 +548,8 @@ async function loadMeta({ autoApply = true, manageLoader = true } = {}) {
   if (!state.activeFileId) {
     setEmptyStateMessage(`
       <div class="empty-state-card">
-        <h3>Pilih sumber data dulu</h3>
-        <p>Pilih file admin atau upload manual sebelum dashboard diproses.</p>
+        <h3>Pilih data dulu</h3>
+        <p>Pilih dataset admin dari dropdown sebelum dashboard diproses.</p>
       </div>
     `);
     return;
@@ -2115,7 +2116,9 @@ function renderPriorityModalContent(data) {
   if (!data?.records || data.records.length === 0) {
     html += '<p style="color:#94a3b8">Tidak ada data.</p>';
   } else {
-    const keys = Object.keys(data.records[0]);
+    const preferredKeys = ['tanggal', 'agent', 'call_result', 'id_customer', 'Aspek Jarang Disebut', 'Aspek Sudah Disebut'];
+    const allKeys = Object.keys(data.records[0]);
+    const keys = preferredKeys.filter((k) => allKeys.includes(k));
     html += '<div class="table-wrap"><table>';
     html += '<thead><tr>' + keys.map((k) => `<th>${escHtml(k)}</th>`).join('') + '</tr></thead>';
     html += '<tbody>' + data.records.slice(0, 200).map((r) => `
@@ -2504,23 +2507,18 @@ function uploadFileWithProgress(formData) {
   state.sessionToken = stored.sessionToken || null;
   state.lockedTL = state.tlName || '';
   state.selectedTL = state.lockedTL || '';
+  state.availableFiles = Array.isArray(stored.availableFiles) ? stored.availableFiles : [];
 })();
 
 window.addEventListener('load', async () => {
   if (!state.sessionToken || state.role === 'admin') return;
   hide($('login-page'));
   show($('app'));
-  try {
-    await loadAvailableFiles({ autoSelectFirst: false, manageLoader: false });
-    if (!state.activeFileId) {
-      setEmptyStateMessage(`
-        <div class="empty-state-card">
-          <h3>Pilih sumber data dulu</h3>
-          <p>Pilih file admin atau upload manual pada sidebar.</p>
-        </div>
-      `);
-    }
-  } catch (_) {
-    // ignore bootstrap errors
-  }
+  populateAvailableFiles();
+  setEmptyStateMessage(`
+    <div class="empty-state-card">
+      <h3>Pilih data dulu</h3>
+      <p>Dashboard baru akan memuat metadata dan data utama setelah Anda memilih dataset pada dropdown.</p>
+    </div>
+  `);
 });
