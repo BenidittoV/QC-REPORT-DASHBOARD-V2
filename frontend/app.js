@@ -372,7 +372,7 @@ async function doLogin() {
     hideLoader();
   } catch (e) {
     if ($('login-error')) {
-      $('login-error').textContent = 'Tidak dapat terhubung ke server. Pastikan backend berjalan.';
+      $('login-error').textContent = 'Gagal saat loading, tekan tombol "Masuk" kembali.';
     }
     hideLoader({ immediate: true });
   }
